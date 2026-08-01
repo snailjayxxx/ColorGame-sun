@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from math import dist
 
 from .detector import DetectionResult
@@ -29,6 +30,15 @@ class BoardSignature:
         )
 
 
+class ClickDecision(str, Enum):
+    """Next action after checking the board following a click."""
+
+    WAIT = "wait"
+    NEXT_LEVEL = "next_level"
+    RETRY = "retry"
+    STOP = "stop"
+
+
 def board_has_changed(
     before: BoardSignature,
     after: BoardSignature,
@@ -50,3 +60,27 @@ def board_has_changed(
     if dist(before.target_rgb, after.target_rgb) >= rgb_threshold:
         return True
     return False
+
+
+def decide_click_action(
+    *,
+    board_changed: bool,
+    click_number: int,
+    poll_count: int,
+    max_polls: int,
+    max_clicks: int = 2,
+) -> ClickDecision:
+    """Choose a bounded action after a click.
+
+    A changed board always advances to the next level. An unchanged board is
+    polled for a bounded period. Only the first failed click may be retried;
+    reaching the per-level click limit always stops the continuous session.
+    """
+
+    if board_changed:
+        return ClickDecision.NEXT_LEVEL
+    if poll_count < max_polls:
+        return ClickDecision.WAIT
+    if click_number < max_clicks:
+        return ClickDecision.RETRY
+    return ClickDecision.STOP
