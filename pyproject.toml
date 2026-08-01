@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "colorgame-detector"
-version = "0.2.0"
+version = "0.3.0"
 description = "Screen region RGB and brightness outlier detector for color-block games"
 readme = "README.md"
 requires-python = ">=3.10"
