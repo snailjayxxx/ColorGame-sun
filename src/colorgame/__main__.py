@@ -1,3 +1,3 @@
-from .app import main
+from .auto_app import main
 
 main()
