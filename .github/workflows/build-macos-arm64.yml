@@ -1,0 +1,74 @@
+name: macOS Apple Silicon app build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Verify Apple Silicon runner
+        run: |
+          uname -a
+          test "$(uname -m)" = "arm64"
+
+      - name: Build macOS app, ZIP and DMG
+        run: |
+          chmod +x build_macos.sh
+          ./build_macos.sh
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ColorGame-macOS-Apple-Silicon
+          path: |
+            dist/ColorGame-macOS-Apple-Silicon.zip
+            dist/ColorGame-macOS-Apple-Silicon.dmg
+            dist/SHA256SUMS-macOS.txt
+          if-no-files-found: error
+
+      - name: Publish latest release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f latest "$GITHUB_SHA"
+          git push origin refs/tags/latest --force
+
+          if gh release view latest >/dev/null 2>&1; then
+            gh release edit latest --title "ColorGame 最新版" --latest
+          else
+            cat > release-notes.md <<'EOF'
+          ColorGame 自动构建版本。
+
+          - Windows：下载 `ColorGame.exe`
+          - Apple Silicon Mac：下载 `ColorGame-macOS-Apple-Silicon.dmg` 或 ZIP
+          EOF
+            gh release create latest --title "ColorGame 最新版" --notes-file release-notes.md --latest
+          fi
+
+          gh release upload latest \
+            dist/ColorGame-macOS-Apple-Silicon.zip \
+            dist/ColorGame-macOS-Apple-Silicon.dmg \
+            dist/SHA256SUMS-macOS.txt \
+            --clobber

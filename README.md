@@ -1,24 +1,45 @@
 # ColorGame 色块识别器
 
-ColorGame 是一个使用 Python 编写的 Windows 桌面工具。用户框选屏幕上的色块网格后，程序会读取每个方块的 RGB、Lab 色彩差异和相对亮度，找出与其他方块不同的方块。
+ColorGame 是一个使用 Python 编写、可直接运行在 Windows 和 Apple Silicon Mac 上的桌面工具。用户框选屏幕上的色块网格后，程序会读取每个方块的 RGB、Lab 色彩差异和相对亮度，找出与其他方块不同的方块，并可连续自动点击进入下一关。
 
 参考游戏：`https://colorfind.trickle.host/`
 
-## 下载 Windows EXE
+## 下载免安装程序
 
-打开仓库右侧 **Releases**，进入 **ColorGame 最新 Windows 版**，下载：
+打开仓库右侧 **Releases**，进入 **ColorGame 最新版**。
+
+### Windows 10/11
+
+下载：
 
 - `ColorGame.exe`：免安装程序，无需安装 Python。
-- `SHA256SUMS.txt`：文件完整性校验值。
+- `SHA256SUMS.txt`：Windows 文件完整性校验值。
+
+Windows 第一次运行未签名的开源 EXE 时，SmartScreen 可能显示保护提示。可先核对 SHA-256，再选择“更多信息 → 仍要运行”。
+
+### Apple Silicon Mac
+
+适用于 M1、M2、M3、M4 等 arm64 Mac，下载任意一种：
+
+- `ColorGame-macOS-Apple-Silicon.dmg`：推荐，打开后把 `ColorGame.app` 拖入“应用程序”。
+- `ColorGame-macOS-Apple-Silicon.zip`：解压后直接得到 `ColorGame.app`。
+- `SHA256SUMS-macOS.txt`：Mac 文件完整性校验值。
+
+Mac 用户无需安装 Python。此公开构建采用固定 Bundle ID 和 ad-hoc 签名，但未使用付费 Apple Developer ID 公证。第一次打开时，可在 Finder 中右键 `ColorGame.app`，选择“打开”，然后确认运行。
+
+第一次使用还需要在 **系统设置 → 隐私与安全性** 中允许：
+
+1. **屏幕与系统音频录制**：用于读取用户手动框选的屏幕区域。
+2. **辅助功能**：用于移动鼠标、自动点击以及全局 F8/F9 快捷键。
+
+修改权限后请退出并重新打开 ColorGame。
 
 最新版本发布页：`https://github.com/snailjayxxx/ColorGame-sun/releases/latest`
-
-> Windows 第一次运行未签名的开源 EXE 时，SmartScreen 可能显示保护提示。可先核对 SHA-256，再选择“更多信息 → 仍要运行”。
 
 ## 连续自动运行
 
 1. 打开色块游戏，让全部方块显示在屏幕上。
-2. 运行 `ColorGame.exe`。
+2. 运行 `ColorGame.exe` 或 `ColorGame.app`。
 3. 勾选 **选择区域后连续自动识别并点击**。
 4. 点击 **选择区域并识别**，只框选完整色块网格，不要包含关卡文字和底部按钮。
 5. 程序会立即识别并点击目标方块。
@@ -60,37 +81,32 @@ ColorGame 是一个使用 Python 编写的 Windows 桌面工具。用户框选�
 - **F8**：使用已保存区域开始识别；开启连续模式时会开始连续运行。
 - **F9**：立即停止当前连续任务。
 
+Mac 键盘默认把 F8/F9 用作媒体键时，需要同时按 `fn`，或者在系统键盘设置中启用“将 F1、F2 等键用作标准功能键”。
+
 ## 从源码运行
 
 要求：Python 3.10 或更高版本。
 
-```powershell
-python -m venv .venv
-.venv\Scripts\activate
+```bash
+python3 -m venv .venv
+source .venv/bin/activate       # macOS / Linux
+# Windows 使用：.venv\Scripts\activate
 python -m pip install -e ".[dev]"
 python run.py
 ```
 
 运行测试：
 
-```powershell
+```bash
 python -m pytest
 ```
 
-## 本地构建 EXE
+## 本地构建 Windows EXE
 
 Windows 双击：
 
 ```text
 build_exe.bat
-```
-
-或手动执行：
-
-```powershell
-python -m pip install -e ".[dev]"
-python -m pytest
-python -m PyInstaller --noconfirm --clean --onefile --windowed --name ColorGame --collect-all pynput run.py
 ```
 
 生成文件位于：
@@ -99,13 +115,32 @@ python -m PyInstaller --noconfirm --clean --onefile --windowed --name ColorGame 
 dist\ColorGame.exe
 ```
 
+## 本地构建 Apple Silicon Mac App
+
+在 M 芯片 Mac 的终端中执行：
+
+```bash
+chmod +x build_macos.sh
+./build_macos.sh
+```
+
+脚本会运行测试，并生成：
+
+```text
+dist/ColorGame.app
+dist/ColorGame-macOS-Apple-Silicon.dmg
+dist/ColorGame-macOS-Apple-Silicon.zip
+dist/SHA256SUMS-macOS.txt
+```
+
+PyInstaller 不是跨平台编译器，因此 Windows EXE 在 Windows runner 构建，Mac arm64 App 在 GitHub 的 Apple Silicon macOS runner 构建。
+
 ## 自动构建与发布
 
-`.github/workflows/build-windows.yml` 会在以下情况运行：
-
-- 推送到 `main`：测试、构建 EXE、上传 Actions Artifact，并更新 `latest` Release。
-- Pull Request：只测试和构建，不发布 Release。
-- 手动运行：可以在 Actions 页面触发。
+- `.github/workflows/build-windows.yml`：测试并构建 Windows EXE。
+- `.github/workflows/build-macos-arm64.yml`：在 arm64 macOS runner 上测试并构建 `.app`、DMG 和 ZIP。
+- 推送到 `main` 后，两套构建产物都会上传到同一个 `latest` Release。
+- Pull Request 只测试和构建，不发布 Release。
 
 ## 项目结构
 
@@ -117,15 +152,17 @@ colorgame/
 │  ├─ automation.py   # 棋盘切换判断与点击决策状态机
 │  └─ detector.py     # 网格检测、RGB/亮度采样与离群值算法
 ├─ tests/             # 合成色块和自动化状态测试
-├─ .github/workflows/ # Windows EXE 自动构建与发布
+├─ .github/workflows/ # Windows 与 Apple Silicon 自动构建
 ├─ build_exe.bat
+├─ build_macos.sh
 ├─ pyproject.toml
 └─ run.py
 ```
 
 ## 已知限制
 
-- 主要面向 Windows 10/11。
+- Mac 自动点击依赖用户授予“屏幕与系统音频录制”和“辅助功能”权限。
+- 当前 Mac Release 是 Apple Silicon arm64 原生版本，不支持老款 Intel Mac。
 - 方块必须基本规则排列，且与背景存在可见边界。
 - 框选区域包含文字、按钮或其他相近大小图形时，可能影响识别。
 - 多显示器采用不同缩放比例时，建议把游戏和程序放在主显示器，或统一各显示器缩放比例。

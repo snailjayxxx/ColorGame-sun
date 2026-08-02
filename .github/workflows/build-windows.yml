@@ -69,16 +69,17 @@ jobs:
           git push origin refs/tags/latest --force
 
           $notes = @"
-          Windows 免安装版本，由 GitHub Actions 从 main 分支最新代码自动构建。
+          ColorGame 自动构建版本。
 
-          使用方法：下载 `ColorGame.exe` 后直接运行，框选完整色块区域即可。
+          - Windows：下载 ``ColorGame.exe``
+          - Apple Silicon Mac：下载 ``ColorGame-macOS-Apple-Silicon.dmg`` 或 ZIP
           "@
           $notes | Out-File -Encoding utf8 release-notes.md
 
           gh release view latest 2>$null
           if ($LASTEXITCODE -eq 0) {
-            gh release edit latest --title "ColorGame 最新 Windows 版" --notes-file release-notes.md --latest
+            gh release edit latest --title "ColorGame 最新版" --notes-file release-notes.md --latest
           } else {
-            gh release create latest --title "ColorGame 最新 Windows 版" --notes-file release-notes.md --latest
+            gh release create latest --title "ColorGame 最新版" --notes-file release-notes.md --latest
           }
           gh release upload latest dist/ColorGame.exe dist/SHA256SUMS.txt --clobber
